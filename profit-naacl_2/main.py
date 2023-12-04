@@ -247,7 +247,7 @@ if __name__ == "__main__": #実行時の引数
     
     output = get_output_folder(args.output, args.env)
     print("output: ", output)
-    if args.resume == "default"
+    if args.resume == "default":
         resume = "output/{}-run0".format(args.env)
         
     train_pickle = "/home/fukuda/profit-naacl/profit-naacl_2/pickles_withSEC_0tumeru/S_test_data_sorted_in_jsons_6_2015-01-01~2015-04-30_20_7_5_384.pkl"

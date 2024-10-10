@@ -306,8 +306,8 @@ if __name__ == "__main__": #実行時の引数
         
     # resume = "output/Humanoid-v2-run4" #テスト時のモデル
         
-    train_pickle = "/home/fukuda/datasets/pickles_withSECtimefeature_0tumeru/S_test_data_sorted_in_jsons_6_2015-01-01~2015-09-30_20_7_5_384.pkl"
-    test_pickle = "/home/fukuda/datasets/pickles_withSECtimefeature_0tumeru/S_test_data_sorted_in_jsons_6_2015-01-01~2015-09-30_20_7_5_384.pkl"
+    train_pickle = "../../datasets/pickles_oneSECtimefeature_0tumeru_byfingpt/S_test_data_sorted_in_jsons_6_2015-01-01~2015-09-30_20_7_5_384.pkl"
+    test_pickle = "../../datasets/pickles_oneSECtimefeature_0tumeru_byfingpt/S_test_data_sorted_in_jsons_6_2015-01-01~2015-09-30_20_7_5_384.pkl"
     print("train_pickle: ", train_pickle)
     print("test_pickle: ", test_pickle)
     # print("TRANSACTION_FEE_PERCENT: ", 0)

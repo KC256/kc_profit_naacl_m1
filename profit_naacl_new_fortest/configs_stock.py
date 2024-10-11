@@ -16,8 +16,8 @@ TWEETS_EMB = 384 #768 4096 384
 TIME_FEATS = STOCK_DIM * N_DAYS * MAX_TWEETS #ツイート間の時間差
 SEC_TIME_FEATS = STOCK_DIM * MAX_SECS #SECの決算報告書をtarget_dayの日付差
 
-INPUT_TEXT = "withtimefeatsSEC" #tweetonly withSEC withtimefeatsSEC
-USING_MODEL = "model_4" #
+INPUT_TEXT = "tweetonly" #tweetonly withSEC withtimefeatsSEC
+USING_MODEL = "model_2" #
 TRANSACTION_FEE_PERCENT = 0.000495 #0.000495
 
 SELECT_ACTION ="default" #ddpgのselect_actionにてどのようにactionを出力するか（ランダムアクション部）

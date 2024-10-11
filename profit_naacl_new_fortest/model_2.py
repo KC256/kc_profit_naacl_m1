@@ -491,8 +491,11 @@ class Actor(nn.Module):
         x_stock = self.linear2(x_stock)
 
         full = torch.cat([x_stock, text_out], dim=1)
-        full = self.tanh(self.linear_c(full))
+        full = self.linear_c(full)
+        print("full before tahn:", full, full.shape)
+        full = self.tanh(full)
         # print("full.shape", full.shape)
+        print("full:", full, full.shape)
         return full
 
 class Critic(nn.Module):

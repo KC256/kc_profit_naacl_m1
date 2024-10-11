@@ -364,7 +364,6 @@ if __name__ == "__main__": #実行時の引数
     args_dict = args.__dict__  # 引数の値を辞書型で取得
     print(args_dict)
     print("""MEMO:
-          n1の手数料かけたver
           """)
 
     if args.mode == "train":
@@ -387,43 +386,47 @@ if __name__ == "__main__": #実行時の引数
         resumes_folder = os.listdir(resumes_folder_path)
         resumes_folder.sort(key=lambda x: os.path.getmtime(os.path.join(resumes_folder_path, x)))
         print(resumes_folder)
+        contains_pkl = any(file.endswith('.pkl') for file in resumes_folder)
         # sys.exit()
         # folder_names = [name for name in sorted(os.listdir(resumes_folder)) if os.path.isdir(os.path.join(resumes_folder, name))]
-        for resume in resumes_folder:
-            if(re.findall(r'\d+', resume)):
-                step = re.findall(r'\d+', resume)[0]
-                # if int(step) > 27000: #step27200のテストのみ実施
-                print("step", step)
-                resume = os.path.join(resumes_folder_path, resume)
-                print("test model:", resume)
-                test(
-                    args.validate_episodes,
-                    agent,
-                    env_test,
-                    evaluate,
-                    resume,
-                    step,
-                    visualize=True,
-                    debug=args.debug,
-                )
+        if contains_pkl==False:
+            for resume in resumes_folder:
+                if(re.findall(r'\d+', resume)):
+                    step = re.findall(r'\d+', resume)[0]
+                    # if int(step) > 27000: #step27200のテストのみ実施
+                    print("step", step)
+                    resume = os.path.join(resumes_folder_path, resume)
+                    print("test model:", resume)
+                    # test(
+                    #     args.validate_episodes,
+                    #     agent,
+                    #     env_test,
+                    #     evaluate,
+                    #     resume,
+                    #     step,
+                    #     visualize=True,
+                    #     debug=args.debug,
+                    # )
             # except:
             #     pass
             # break
-        
-        
-        # #1つのみの場合
-        # resume = "output/Humanoid-v2-run4"
-        # step = "best"
-        # test(
-        #         args.validate_episodes,
-        #         agent,
-        #         env_test,
-        #         evaluate,
-        #         resume,
-        #         step,
-        #         visualize=True,
-        #         debug=args.debug,
-        #     )
+        else:
+            print("stepは１種類のみ")
+            step = re.findall(r'\d+', resumes_folder_path)[-1]
+            print("step", step)
+            resume = resumes_folder_path
+            print("test model:", resume)
+            test(
+                        args.validate_episodes,
+                        agent,
+                        env_test,
+                        evaluate,
+                        resume,
+                        step,
+                        visualize=True,
+                        debug=args.debug,
+                    )
+
     else:
         raise RuntimeError("undefined mode {}".format(args.mode))
     

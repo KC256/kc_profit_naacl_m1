@@ -1,0 +1,137 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "モデル内で買われている銘柄と買われていない銘柄を合体させて買い➡︎売りとなるか観察するようのpickleを作成"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "#辞書型データの配列に対し、日付区間を指定してその区間で配列を分割するコードを生成する\n",
+        "import pickle\n",
+        "\n",
+        "load_path = \"/home/fukuda/datasets/pickles_oneSEC_0tumeru_byfingpt/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-30_20_7_5_384.pkl\"\n",
+        "with open(load_path, \"rb\") as file:\n",
+        "    loaded_data = pickle.load(file)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 10,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "#辞書型データの配列に対し、日付区間を指定してその区間で配列を分割するコードを生成する\n",
+        "import pickle\n",
+        "\n",
+        "load_path = \"/home/fukuda/datasets/pickles_oneSEC_0tumeru_byfingpt/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-30_20_7_5_384.pkl\"\n",
+        "with open(load_path, \"rb\") as file:\n",
+        "    loaded_data_copy = pickle.load(file)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 2,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "import re\n",
+        "import os"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "temp = loaded_data[0]\n",
+        "print(temp.keys())\n",
+        "for key in temp.keys():\n",
+        "    try:\n",
+        "        print(key, temp[key].shape)\n",
+        "        temp[key] = temp[key][:2]\n",
+        "        print(key, temp[key].shape)\n",
+        "        print(key, loaded_data[0][key].shape)\n",
+        "    except:\n",
+        "        print(key)\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "for temp in loaded_data:\n",
+        "    for key in temp.keys():\n",
+        "        try:\n",
+        "            print(key, temp[key].shape)\n",
+        "            temp[key] = temp[key][:2]\n",
+        "            print(key, temp[key].shape)\n",
+        "            print(key, loaded_data[0][key].shape)\n",
+        "        except:\n",
+        "            print(key)\n",
+        "            \n",
+        "for temp in loaded_data_copy:\n",
+        "    for key in temp.keys():\n",
+        "        try:\n",
+        "            print(key, temp[key].shape)\n",
+        "            temp[key] = temp[key][:2].flip(0)\n",
+        "            print(key, temp[key].shape)\n",
+        "            print(key, loaded_data[0][key].shape)\n",
+        "        except:\n",
+        "            print(key)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "print(loaded_data[0][\"embedding\"].shape)\n",
+        "print(loaded_data_copy[0][\"embedding\"].shape)\n",
+        "\n",
+        "# print(loaded_data[0][\"embedding\"][0])\n",
+        "print(loaded_data_copy[0][\"embedding\"][1])"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": []
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.10.12"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}

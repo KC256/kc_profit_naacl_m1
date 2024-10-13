@@ -351,7 +351,7 @@ if __name__ == "__main__": #実行時の引数
         max_episode_length=len(data_test),
     )
     
-    configs_stock.INITIAL_ACCOUNT_BALANCE = 100000
+    # configs_stock.INITIAL_ACCOUNT_BALANCE = 100000
 
     print("args.validate_steps:", args.validate_steps)
     print("args.epsilon:", args.epsilon)

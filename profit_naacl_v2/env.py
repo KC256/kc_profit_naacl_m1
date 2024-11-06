@@ -43,6 +43,7 @@ class StockEnvTrade(gym.Env):
         #自作
         self.daybeforecash = int(args.initial_account_balance) #一日前のcash
         self.daybefore_end_total_asset = np.zeros(STOCK_DIM) #一日前のend_total_asset
+        self.daybefore_stockprices = np.zeros(STOCK_DIM) #一日前のself.state[TARGET_IDX:PRICEDIFF~IDX]
         self.buy_num = 0 #その日実際にかった企業数
         self.sell_num = 0 #その日実際に売った企業数
         self.hold_num = 0 #売買に含まれていたものの実際には取引しなかった企業数
@@ -384,10 +385,27 @@ class StockEnvTrade(gym.Env):
             )
             print("self.state[HOLDING_IDX~EMB_IDX]:", self.state[HOLDING_IDX:EMB_IDX]) #各企業の株の保有数　小数点になるが.. actionの値がそのまま売買数になる
             print("diff_previousday_state[HOLDING_IDX~EMB_IDX]:", np.subtract(np.array(self.state[HOLDING_IDX:EMB_IDX]), np.array(self.daybefore_holdstate)))
-            print("self.state[TARGET_IDX:PRICEDIFF~IDX]:", self.state[TARGET_IDX:PRICEDIFF_IDX])
-            
-            # print("self.state[TARGET_IDX:PRICEDIFF_IDX]", self.state[TARGET_IDX:PRICEDIFF_IDX]) #各企業の株価
-            # print("sum(end_total_asset):", sum(end_total_asset))
+            print("self.state[TARGET_IDX:PRICEDIFF~IDX]:", self.state[TARGET_IDX:PRICEDIFF_IDX]) #その日の各銘柄の株価
+            print("daybefore_stockprices:", self.daybefore_stockprices)
+            if self.day==0:
+                self.daybefore_stockprices=self.state[TARGET_IDX:PRICEDIFF_IDX]
+            stockprices_raio = [a / b for a, b in zip(self.state[TARGET_IDX:PRICEDIFF_IDX], self.daybefore_stockprices)] #各銘柄の株価の前日との変化率
+            # print("stockprices_raio:", stockprices_raio)
+            # normalized_hold = [x / sum(self.state[HOLDING_IDX:EMB_IDX]) for x in self.state[HOLDING_IDX:EMB_IDX]]
+            # print("normalized_hold:", normalized_hold)
+            # y_w = np.array(stockprices_raio) * np.array(normalized_hold)
+            # print("y_w:", y_w)
+            hold_price = end_total_asset.tolist() #各銘柄の保有金額（保有数＊株価のリスト）
+            hold_price.insert(0, self.state[0])
+            hold_price_ratio = [a / (self.state[0] + sum(end_total_asset)) for a in hold_price]
+            stockprices_raio.insert(0, 1)
+            print("stockprices_raio:", stockprices_raio) #yに対応
+            # print("hold_price", hold_price)
+            print("hold_price_ratio", hold_price_ratio) #wに対応
+            y_w = [a * b for a, b in zip(stockprices_raio, hold_price_ratio)] 
+            print("y_w:", y_w)
+            print("sum(y_w):", sum(y_w)) #y*wに対応
+
 
             self.asset_memory.append(self.state[0] + sum(end_total_asset))
 
@@ -426,14 +444,38 @@ class StockEnvTrade(gym.Env):
                 )
                 self.rewards_memory.append(self.reward)
                 self.reward = self.reward * REWARD_SCALING
+                
+            elif self.args.diff == "jiang": #参照：A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem
+                # self.reward = 
+                self.rewards_memory.append(self.reward)
+                self.reward = self.reward * REWARD_SCALING
             else:
                 # self.reward = sum(end_total_asset - begin_total_asset) + self.state[0] - self.daybeforecash #+ self.state[0] - self.daybeforecashを追加
                 self.reward = sum(end_total_asset - self.daybefore_end_total_asset) + self.state[0] - self.daybeforecash #手数料考慮されてる？
                 self.rewards_memory.append(self.reward)
                 self.reward = self.reward * REWARD_SCALING
-            # print("end_total_asset begin_total_asset", end_total_asset, begin_total_asset)
-            # print("self.daybefore_end_total_asset", self.daybefore_end_total_asset)
+            print("end_total_asset", end_total_asset)
+            print("begin_total_asset", begin_total_asset)
+            print("self.daybefore_end_total_asset", self.daybefore_end_total_asset)
             # print("sum end_total_asset sum begin_total_asset", sum(end_total_asset), sum(begin_total_asset))
+            
+            # temp = sum(
+            #         (end_total_asset - begin_total_asset)
+            #         * np.array(self.state[VOLDIFF_IDX:TEXTDIFF_IDX]) #利益を修正（重み的な）　次元は銘柄数
+            #     )
+            # print("vol:", temp)
+            # temp = sum(
+            #         (end_total_asset - begin_total_asset)
+            #         * np.array(self.state[TEXTDIFF_IDX:PRICE_TEXT_DIFF_IDX])
+            #     )
+            # print("text:", temp)
+            # temp = sum(
+            #         (end_total_asset - begin_total_asset)
+            #         * np.array(self.state[PRICE_TEXT_DIFF_IDX:ALLDIFF_IDX])
+            #     )
+            # print("price_text:", temp)
+            
+            print("self.args.diff:", self.args.diff)
             print("self.reward:", self.reward)
             print("sum end_total_asset(stocks):", sum(end_total_asset))
             print("self.state[0](cash):", self.state[0])
@@ -441,6 +483,7 @@ class StockEnvTrade(gym.Env):
             # print("self.daybeforecash", self.daybeforecash)
             self.daybeforecash = self.state[0]
             self.daybefore_end_total_asset = end_total_asset
+            self.daybefore_stockprices = self.state[TARGET_IDX:PRICEDIFF_IDX]
             self.daybefore_holdstate = self.state[HOLDING_IDX:EMB_IDX]
             self.daybefore_cost = self.cost
             # print("self.reward", self.reward/REWARD_SCALING)

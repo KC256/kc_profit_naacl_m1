@@ -492,11 +492,23 @@ class Actor(nn.Module):
 
         full = torch.cat([x_stock, text_out], dim=1)
         full = self.linear_c(full)
-        print("full before tahn:", full, full.shape)
-        full = self.tanh(full)
-        # print("full.shape", full.shape)
-        print("full:", full, full.shape)
-        return full
+        # print("full before tahn:", full, full.shape)
+        
+        # 平均と標準偏差を計算
+        mean = full.mean()
+        std = full.std()
+
+        # 標準化
+        normalized_tensor = (full - mean) / std
+        print("normalized_tensor", normalized_tensor)
+        
+        # full = self.tanh(full)
+        # # print("full.shape", full.shape)
+        # print("full:", full, full.shape)
+        
+        
+        
+        return normalized_tensor #full
 
 class Critic(nn.Module):
     """

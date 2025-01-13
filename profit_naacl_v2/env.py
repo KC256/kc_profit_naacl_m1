@@ -405,6 +405,10 @@ class StockEnvTrade(gym.Env):
             y_w = [a * b for a, b in zip(stockprices_raio, hold_price_ratio)] 
             print("y_w:", y_w)
             print("sum(y_w):", sum(y_w)) #y*wに対応
+            variance_hold_price_ratio = np.var(hold_price_ratio)  # 母分散
+            print("variance_hold_price_ratio:", variance_hold_price_ratio)
+            print("sum(y_w)/variance_hold_price_ratio:", sum(y_w)/variance_hold_price_ratio) #y*wに対応
+            
 
 
             self.asset_memory.append(self.state[0] + sum(end_total_asset))
@@ -446,9 +450,16 @@ class StockEnvTrade(gym.Env):
                 self.reward = self.reward * REWARD_SCALING
                 
             elif self.args.diff == "jiang": #参照：A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem
-                # self.reward = 
+                # print("jinang sucess")
+                self.reward = sum(y_w)
+                self.rewards_memory.append(self.reward)
+                self.reward = self.reward * REWARD_SCALING #これスケールをどれくらいにするか要検討
+                
+            elif self.args.diff == "portfolio_var":
+                self.reward = sum(y_w)/variance_hold_price_ratio
                 self.rewards_memory.append(self.reward)
                 self.reward = self.reward * REWARD_SCALING
+            
             else:
                 # self.reward = sum(end_total_asset - begin_total_asset) + self.state[0] - self.daybeforecash #+ self.state[0] - self.daybeforecashを追加
                 self.reward = sum(end_total_asset - self.daybefore_end_total_asset) + self.state[0] - self.daybeforecash #手数料考慮されてる？

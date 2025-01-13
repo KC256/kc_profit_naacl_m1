@@ -17,6 +17,6 @@ TRANSACTION_FEE_PERCENT = 0.000495 #0.000495
 
 訓練実行例：(Profit-naacl) fukuda@deepstation:~/M1_reserch/kc_profit_naacl_m1/profit_naacl_new_fortest$ python main.py --test_pickle="../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-03_20_7_5_384.pkl" --train_pickle="../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-03_20_7_5_384.pkl" --initial_account_balance=100000 --mode=train --warmup=1 --train_iter=3 --seed=1
 
-バックグランド訓練例：(Profit-naacl) fukuda@deepstation:~/M1_reserch/kc_profit_naacl_m1/profit_naacl_new_fortest$ setsid nohup python main.py --test_pickle="../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-03_20_7_5_384.pkl" --train_pickle="../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-03_20_7_5_384.pkl" --initial_account_balance=100000 --mode=train --warmup=1 --train_iter=3 --seed=1 > temp_output.log 2>&1 &
+バックグランド訓練例：(Profit-naacl) fukuda@deepstation:~/M1_reserch/kc_profit_naacl_m1/profit_naacl_new_fortest$ setsid nohup python main.py --test_pickle="../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-03_20_7_5_384.pkl" --train_pickle="../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-10-01~2015-10-03_20_7_5_384.pkl" --initial_account_balance=100000 --mode=train --warmup=1 --train_iter=3 --seed=1 > temp_train_output.log 2>&1 &
 
 ./output_2はb4時に学習させたモデルのデータ(AWS),スクショからどれがどんなモデルか判断して

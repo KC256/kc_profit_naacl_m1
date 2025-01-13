@@ -262,7 +262,7 @@ if __name__ == "__main__": #実行時の引数
         type=int,
         help="how many steps to perform a validate experiment",
     )
-    parser.add_argument("--output", default="output", type=str, help="")
+    parser.add_argument("--output", default="output_m1", type=str, help="")
     parser.add_argument("--debug", dest="debug", action="store_true")
     parser.add_argument("--init_w", default=0.003, type=float, help="")
     parser.add_argument(
@@ -300,6 +300,10 @@ if __name__ == "__main__": #実行時の引数
     parser.add_argument(
         "--resumes_folder_path", default=None, type=str, help="which model to choose <profit, simple, plain>"
     )
+    
+    parser.add_argument(
+        "--wantoutput", default="no", type=str, help="モデルのoutputが欲しいか"
+    )
 
     args = parser.parse_args()
     
@@ -308,7 +312,7 @@ if __name__ == "__main__": #実行時の引数
     print("INPUT_TEXT:", INPUT_TEXT)
     print("USING_MODEL:", USING_MODEL)
     
-    wantoutput = "no"
+    wantoutput = args.wantoutput
     if wantoutput=="no":
         print("output is not made")
         output ="hoge"

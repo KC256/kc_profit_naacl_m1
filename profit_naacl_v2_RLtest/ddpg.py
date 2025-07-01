@@ -123,24 +123,55 @@ class DDPG(object):
         # torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1.0) #0214
         self.critic_optim.step()
 
-        # Actor update
-        self.actor.zero_grad()
+        # # Actor update
+        # self.actor.zero_grad()
 
-        # print()
+        # # print()
+        # policy_loss = -self.critic(
+        #     to_tensor(state_batch), self.actor(to_tensor(state_batch))
+        # )
+
+        # print("policy_loss:", policy_loss)
+        # policy_loss = policy_loss.mean()
+        # policy_loss.backward()
+        # print("policy_loss_mean:", policy_loss)
+        # # torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0) #0214
+        # self.actor_optim.step()
+        
+        # Actorの更新（自然勾配法を使用）
+        self.actor.zero_grad()
         policy_loss = -self.critic(
             to_tensor(state_batch), self.actor(to_tensor(state_batch))
-        )
-
-        print("policy_loss:", policy_loss)
-        policy_loss = policy_loss.mean()
+        ).mean()
         policy_loss.backward()
-        print("policy_loss_mean:", policy_loss)
-        # torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0) #0214
-        self.actor_optim.step()
 
-        # Target update
+        # フィッシャー情報行列を計算
+        fisher_matrix = self.compute_fisher_matrix(state_batch)
+        natural_gradient = self.compute_natural_gradient(fisher_matrix)
+
+        # 自然勾配を用いてActorを更新
+        for param, grad in zip(self.actor.parameters(), natural_gradient):
+            param.data -= self.actor_optim.param_groups[0]['lr'] * grad
+
+        # ターゲットネットワークの更新
         soft_update(self.actor_target, self.actor, self.tau)
         soft_update(self.critic_target, self.critic, self.tau)
+
+    def compute_fisher_matrix(self, state_batch):
+        actions = self.actor(to_tensor(state_batch))
+        log_probs = torch.log(actions + 1e-8)
+        fisher_matrix = torch.mm(log_probs.T, log_probs) / len(state_batch)
+        return fisher_matrix
+
+    def compute_natural_gradient(self, fisher_matrix):
+        """自然勾配を計算"""
+        # fisher_inv = torch.inverse(fisher_matrix + 1e-8 * torch.eye(fisher_matrix.size(0)))
+        fisher_inv = torch.inverse(fisher_matrix + 1e-8 * torch.eye(fisher_matrix.size(0), device=fisher_matrix.device))
+        gradients = [param.grad.view(-1) for param in self.actor.parameters()]
+        gradients = torch.cat(gradients)
+        natural_gradient = torch.mm(fisher_inv, gradients.unsqueeze(1)).squeeze(1)
+        return natural_gradient.split([param.numel() for param in self.actor.parameters()])
+
 
     def eval(self):
         self.actor.eval()

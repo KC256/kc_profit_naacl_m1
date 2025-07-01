@@ -1,4 +1,4 @@
-#model_2
+#model_1
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,7 +11,7 @@ from configs_stock import *
 device = torch.device("cuda")
 class TimeLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, cuda_flag=False, bidirectional=False):
-        # print("start model_2")
+        # print("input_size", input_size)
         super(TimeLSTM, self).__init__()
         self.hidden_size = hidden_size
         self.input_size = input_size
@@ -81,26 +81,20 @@ class attn(torch.nn.Module):
         lens: B*1
         """
         if self.use_attention: #これが実行される
-            # print("use_attention:", full.shape, last.shape)
             score = self.V(F.tanh(self.W1(last) + self.W2(full)))
-            # print("score:", score)
             # print(full.shape, last.shape)
             # print(score.shape) #-> B*30*1 この形にならない 30を今回のinputデータに合う形に変更必要　config的な感じで変更
             # print(self.W1(last).shape, self.W2(full).shape)
-            # print("lens:", lens)
-            lens = None #0218
+
             if lens != None:
                 mask = self.arange[None, :] < lens[:, None]  # B*30
                 # print(score.shape, mask.shape)
                 # print(score)
                 score[~mask] = float("-inf")
-                
-            # print("score2:", score) #ここが-infになる
+
             attention_weights = F.softmax(score, dim=dim)
-            # print("attention_weights", attention_weights)
             context_vector = attention_weights * full
             context_vector = torch.sum(context_vector, dim=dim)
-            # print("context_vector", context_vector)
             return context_vector  # B*in_shape
         else:
             if lens != None:
@@ -185,23 +179,6 @@ class Actor(nn.Module):
             self.add_module("lstm1_{}".format(i), tweet_lstm)
 
         self.lstm1_outshape = intraday_hiddenDim
-        
-        
-        
-        #timelstm
-        self.tsec_lstm1s = [
-            TimeLSTM(
-                input_size=text_embed_dim,
-                hidden_size=intraday_hiddenDim,
-            )
-            for _ in range(num_stocks)
-        ]
-        for i, tweet_lstm in enumerate(self.tsec_lstm1s):
-            self.add_module("tseclstm1_{}".format(i), tweet_lstm)
-        self.tsec_lstm1_outshape = intraday_hiddenDim
-           
-        
-        
         self.lstm2_outshape = interday_hiddenDim
 
         self.attn1s = [
@@ -234,25 +211,11 @@ class Actor(nn.Module):
             for _ in range(num_stocks)
         ]
         
-        self.tsec_lstm2s = [
-            nn.LSTM(
-                input_size=self.tsec_lstm1_outshape,
-                hidden_size=interday_hiddenDim,
-                num_layers=interday_numLayers,
-                batch_first=True,
-                bidirectional=False,
-            )
-            for _ in range(num_stocks)
-        ]
-        
         for i, day_lstm in enumerate(self.lstm2s):
             self.add_module("lstm2_{}".format(i), day_lstm)
             
         for i, day_lstm in enumerate(self.sec_lstm2s): #これによってsec_lstm2sのパラメータがcpuからcudaに置かれる　これがないとエラー　おまじないのようなものかと
             self.add_module("sec_lstm2_{}".format(i), day_lstm)
-            
-        for i, day_lstm in enumerate(self.tsec_lstm2s):
-            self.add_module("tsec_lstm2_{}".format(i), day_lstm)
 
         self.attn2s = [
             attn(self.lstm2_outshape)
@@ -287,14 +250,6 @@ class Actor(nn.Module):
         for i, linear_x in enumerate(self.sec_linearx1):
             self.add_module("sec_linearx1_{}".format(i), linear_x)
             
-            
-        self.linear_mergex1 = [
-        nn.Linear(self.lstm2_outshape, self.lstm2_outshape)
-        for _ in range(num_stocks)
-        ]
-        for i, linear_x in enumerate(self.linear_mergex1):
-            self.add_module("linear_mergex1_{}".format(i), linear_x)
-            
 
         self.linearx2 = [nn.Linear(self.lstm2_outshape, 64)
                          for _ in range(num_stocks)]
@@ -306,12 +261,6 @@ class Actor(nn.Module):
                          for _ in range(num_stocks)]
         for i, linear_x in enumerate(self.sec_linearx2):
             self.add_module("sec_linearx2_{}".format(i), linear_x)
-            
-
-        self.linear_mergex2 = [nn.Linear(self.lstm2_outshape, 64)
-                         for _ in range(num_stocks)]
-        for i, linear_x in enumerate(self.linear_mergex2):
-            self.add_module("linear_mergex2_{}".format(i), linear_x)
             
 
         self.drop = nn.Dropout(p=0.3)
@@ -329,7 +278,7 @@ class Actor(nn.Module):
         self.num_stocks = num_stocks
         self.device = device
         
-        self.attn_x = attn_x(64, 128) #(64, 64)から変更
+        self.attn_x = attn_x(64, 64)
 
     def init_hidden(self):
         h = Variable(torch.zeros(self.bs, self.lstm1_outshape)).to(self.device)
@@ -339,41 +288,20 @@ class Actor(nn.Module):
 
     def forward(self, state):
         state = state.view(-1, FEAT_DIMS)
-        print("state.shape", state.shape)
+        # print("state.shape", state.shape)
         stock_feats = state[:, 0: 2 * self.num_stocks + 1].view(
             -1, 2 * self.num_stocks + 1
-        ) #cashとlastprice(銘柄の前日の株価)を示すcash
+        )
         sentence_feat = state[:, EMB_IDX:LEN_IDX].view(
             -1, self.num_stocks, N_DAYS, MAX_TWEETS, TWEETS_EMB
         )
-        
-        # print("isnan(sentence_feat)before", torch.isnan(sentence_feat).any())
-        
         len_tweets = state[:,
                            LEN_IDX:TARGET_IDX].view(-1, self.num_stocks, N_DAYS)
+        time_feats = state[:,
+                           TIME_IDX:SECEMB_IDX].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
         
-        if INPUT_TEXT=="tweetonly":
-            time_feats = state[:,
-                           TIME_IDX:].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
-            
-        
-        elif INPUT_TEXT=="withSEC":
-            time_feats = state[:,
-                            TIME_IDX:SECEMB_IDX].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
-            
-            sec_feats = state[:,
-                            SECEMB_IDX:].view(-1, self.num_stocks, MAX_SECS, TWEETS_EMB) 
-            
-        elif INPUT_TEXT=="withtimefeatsSEC":
-            time_feats = state[:,
-                            TIME_IDX:SECEMB_IDX].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
-            
-            sec_feats = state[:,
-                            SECEMB_IDX:SECTIME_IDX].view(-1, self.num_stocks, MAX_SECS, TWEETS_EMB)
-            
-            sec_time_feats = state[:,
-                            SECTIME_IDX:].view(-1, self.num_stocks, MAX_SECS)
-            
+        sec_feats = state[:,
+                           SECEMB_IDX:].view(-1, self.num_stocks, MAX_SECS, TWEETS_EMB) 
         
         # print("shapes:", stock_feats.shape, sentence_feat.shape, len_tweets.shape, time_feats.shape, sec_feats.shape)
 
@@ -382,11 +310,7 @@ class Actor(nn.Module):
         sentence_feat = sentence_feat.permute(1, 2, 0, 3, 4)
         len_tweets = len_tweets.permute(1, 2, 0)
         time_feats = time_feats.permute(1, 2, 0, 3)
-        # print("time_feats:", time_feats.shape)
-        if INPUT_TEXT=="withSEC" or INPUT_TEXT=="withtimefeatsSEC":
-            sec_feats =sec_feats.permute(1, 0, 2, 3) #num_stock, 1, secの数, embeddingsize
-        if INPUT_TEXT=="withtimefeatsSEC":
-            sec_time_feats = sec_time_feats.permute(1, 2, 0)
+        sec_feats =sec_feats.permute(1, 0, 2, 3) #num_stock, 1, secの数, embeddingsize
         # print("shapes:", stock_feats.shape, sentence_feat.shape, len_tweets.shape, time_feats.shape, sec_feats.shape)
 
 
@@ -402,15 +326,12 @@ class Actor(nn.Module):
                 temp_sent = sentence_feat[i, j, :, :, :] #ここで企業と日付決定 ある企業のある日のtweetsそのもの
                 temp_len = len_tweets[i, j, :] #ある企業のある日のtweetsの数
                 temp_timefeats = time_feats[i, j, :, :] #ある企業のある日のtweets同士の時間差　temp_len temp_timefeats 決算報告書にはいらん
-                # print("temp_time_feats:", temp_timefeats.shape)
                 # print("temp_len, temp_timefeats:", temp_len, temp_timefeats)
 
                 temp_lstmout, (_, _) = self.lstm1s[i]( #TLSTM
                     temp_sent, temp_timefeats, (h_init, c_init)
                 )
-                # print("temp_sent", torch.isnan(temp_sent).any())
-                # print("temp_timefeats", torch.isnan(temp_timefeats).any())
-                # print("temp_lstmout", torch.isnan(temp_lstmout).any())
+                
                 # print("temp_lstmout:", temp_lstmout)
                 # print("temp_lstmout.shape:", temp_lstmout.shape) #torch.Size([1, 30, 128])
 
@@ -419,143 +340,48 @@ class Actor(nn.Module):
                 for k in range(self.bs): #self.bs = 1
                     if last_idx[k] != 0:
                         temp_hn[k] = temp_lstmout[k, last_idx[k] - 1, :]
-                        
-                # print("torch.isnan(temp_hn).any():", torch.isnan(temp_hn).any()) #false
-                # print("torch.isnan(temp_len.to(self.device)).any():", torch.isnan(temp_len.to(self.device)).any())  #false
                 lstm1_out[j] = self.attn1s[i](temp_lstmout, temp_hn, temp_len.to(self.device)) #Attn 第二引数は最後の単語
                 # print("lstm1_out[j].shape", lstm1_out[j].shape)
                 # print("lstm1_out[j]", lstm1_out[j])
-                # print(f"torch.isnan(lstm1_out[{j}]).any():", torch.isnan(lstm1_out[j]).any()) #true ここでNan発生
-                # print(f"lstm1_out[{j}]:", lstm1_out[j])
-                
+
             # print("lstm1_out.shape ", lstm1_out.shape)#lookback_len, 1, 128
-            # print("torch.isnan(lstm1_out).any():", torch.isnan(lstm1_out).any()) #true
-            # if(torch.isnan(lstm1_out).any()): 
-            #     print("lstm1_out has Nan") #この時点で0以外Nan
             lstm1_out = lstm1_out.permute(1, 0, 2)#1, lookback_len, 128
             lstm2_out, (h2_out, _) = self.lstm2s[i](lstm1_out) #隠れ層h2outを得るため
             # print("lstm2_out.shape, h2_out.shape", lstm2_out.shape, h2_out.shape)
             h2_out = h2_out.permute(1, 0, 2)
             x1 = self.attn2s[i](lstm2_out, h2_out) #lstm2_outは7日分のツイート30*7を含む　h2outはその隠れ層
-            # print("x1.shape ", x1.shape)
             x1 = self.drop(self.relu(self.linearx1[i](x1))) #drop:過学習防止　relu:入力が0以下の時0を出力　
-            # print("x1.shape ", x1.shape)
             x1 = self.linearx2[i](x1)
             # print("x1.shape ", x1.shape)
             # text_out[i] = x1 #これが最終的な特徴量p1　これをp10としてp11とattnする
             
-            # if(torch.isnan(text_out).any()): 
-            #     print(i, "has Nan") #この時点で0以外Nan
-            if INPUT_TEXT=="tweetonly":
-                x = x1
+            #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
+            temp_sec = sec_feats[i, :, :, :]
+            # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
+            # lstm1_out = lstm1_out.permute(1, 0, 2) #不要
+            sec_lstm2_out, (sec_h2_out, _) = self.sec_lstm2s[i](temp_sec.to(self.device)) #secに対してlstm層を入れる意味はあるか？
+            # print("sec_lstm2_out.shape, sec_h2_out.shape", sec_lstm2_out.shape, sec_h2_out.shape)
+            sec_h2_out = sec_h2_out.permute(1, 0, 2)
+            x2 = self.sec_attn2s[i](lstm2_out, h2_out)
+            x2 = self.drop(self.relu(self.sec_linearx1[i](x2)))
+            x2 = self.sec_linearx2[i](x2)
+            # print("x2.shape", x2.shape) #[1, 64]
             
-            elif INPUT_TEXT=="withSEC":
-                #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
-                temp_sec = sec_feats[i, :, :, :]
-                # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
-                # lstm1_out = lstm1_out.permute(1, 0, 2) #不要
-                sec_lstm2_out, (sec_h2_out, _) = self.sec_lstm2s[i](temp_sec.to(self.device)) #secに対してlstm層を入れる意味はあるか？
-                # print("sec_lstm2_out.shape, sec_h2_out.shape", sec_lstm2_out.shape, sec_h2_out.shape)
-                sec_h2_out = sec_h2_out.permute(1, 0, 2)
-                # x2 = self.sec_attn2s[i](lstm2_out, h2_out) #0113以前はこうなっていた　引数がtweet関連なのでSEC考慮できてなくね
-                x2 = self.sec_attn2s[i](sec_lstm2_out, sec_h2_out) #これが正しいのでは
-                x2 = self.drop(self.relu(self.sec_linearx1[i](x2))) 
-                # print("x2.shape", x2.shape)
-                x2 = self.sec_linearx2[i](x2)
-                # print("x2.shape", x2.shape) #[1, 64]
-                
-                #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
-                
-                
-            elif INPUT_TEXT=="withtimefeatsSEC":
-                #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
-                temp_sec = sec_feats[i, :, :, :]
-                temp_sec_time_feats = sec_time_feats[i, :, :]
-                print("temp_sec",temp_sec.shape)
-                print("temp_sec_time_feats",temp_sec_time_feats.shape)
-                
-                # print("temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape", temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape)
-                sec_lstmout, (_, _) = self.tsec_lstm1s[i]( #TLSTM
-                    temp_sec, temp_sec_time_feats, (h_init, c_init)
-                )
-
-                sec_lstm2_out, (sec_h2_out, _) = self.tsec_lstm2s[i](sec_lstmout) #tsecであることに注意
-                sec_h2_out = sec_h2_out.permute(1, 0, 2)
-                x2 = self.sec_attn2s[i](sec_lstm2_out, sec_h2_out) #これが正しいのでは
-                x2 = self.drop(self.relu(self.sec_linearx1[i](x2))) 
-                # print("x2.shape", x2.shape)
-                x2 = self.sec_linearx2[i](x2)
-                # print("x2.shape", x2.shape) #[1, 64]
-                
-                #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                # print("x.shape", x.shape)
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
-            
+            #x1, x2に対してattn
+            x = self.attn_x(x1, x2) #これ正しいか怪しい
+            # print("x.shape", x.shape)
             text_out[i] = x
-            # if(torch.isnan(x).any()):
-                
             
-        # print("isnan(text_out)before", torch.isnan(text_out).any())
-        # nan_count = torch.isnan(text_out).sum().item()  # NaN の数を取得
-        # print(f"Number of NaN elements in text_out: {nan_count}")
+
         text_out = text_out.permute(1, 0, 2)
-        # text_out = torch.nan_to_num(text_out, nan=0.0) 
-        # text_out = text_out.view(self.bs, -1)
-        text_out = text_out.reshape(self.bs, -1)
-        # print("isnan(stock_feats)", torch.isnan(stock_feats).any())
-        # print("isnan(self.linear1.weight):", torch.isnan(self.linear1.weight).any())  # True なら `NaN` を含んでいる
-        # print("isnan(self.linear2.weight):", torch.isnan(self.linear2.weight).any())  # True なら `NaN` を含んでいる
-        # print("stock_feats.shape:", stock_feats.shape)
-        # print("isnan(stock_feats)", torch.isnan(stock_feats).any())
+        text_out = text_out.view(self.bs, -1)
         x_stock = self.relu(self.linear1(stock_feats))
         x_stock = self.linear2(x_stock)
-        # x_stock = torch.nan_to_num(x_stock, nan=0.0) 
-        # print("text_out:", text_out)
-
-        # print("isnan(text_out)", torch.isnan(text_out).any())
-        # print("isnan(x_stock)", torch.isnan(x_stock).any())
-        # print("self.linear1.weight:", self.linear1.weight)
-        # print("self.linear1.bias:", self.linear1.bias)
 
         full = torch.cat([x_stock, text_out], dim=1)
-        print("full:", full)
-        # full = torch.nan_to_num(full, nan=0.0) #1210 Nanによるエラー回避
-        # print("isnan(full)", torch.isnan(full).any())  # full に NaN が含まれているか
-        # print("full.shape:", full.shape)
-        # print("self.linear_c:", self.linear_c) 
-        full = self.linear_c(full)
-        # print("full2:", full)
-        # print("full before tahn:", full, full.shape)
-        
-        # 平均と標準偏差を計算
-        mean = full.mean()
-        # print("mean:", mean)
-        std = full.std()
-        # print("std:", std)
-
-        # 標準化
-        normalized_tensor = (full - mean) / std
-        normalized_tensor = torch.nan_to_num(normalized_tensor, nan=0.0) #1210 Nanによるエラー回避
-        print("normalized_tensor", normalized_tensor)
-        
-        # full = self.tanh(full)
-        # # print("full.shape", full.shape)
-        # print("full:", full, full.shape)
-        
-        
-        
-        return normalized_tensor #full
+        full = self.tanh(self.linear_c(full))
+        # print("full.shape", full.shape)
+        return full
 
 class Critic(nn.Module):
     """
@@ -590,18 +416,6 @@ class Critic(nn.Module):
             )
             for _ in range(num_stocks)
         ]
-        
-        #timelstm
-        self.tsec_lstm1s = [
-            TimeLSTM(
-                input_size=text_embed_dim,
-                hidden_size=intraday_hiddenDim,
-            )
-            for _ in range(num_stocks)
-        ]
-        for i, tweet_lstm in enumerate(self.tsec_lstm1s):
-            self.add_module("tseclstm1_{}".format(i), tweet_lstm)
-        self.tsec_lstm1_outshape = intraday_hiddenDim
 
         for i, tweet_lstm in enumerate(self.lstm1s):
             self.add_module("lstm1_{}".format(i), tweet_lstm)
@@ -630,19 +444,6 @@ class Critic(nn.Module):
         for i, day_lstm in enumerate(self.lstm2s):
             self.add_module("lstm2_{}".format(i), day_lstm)
             
-        self.tsec_lstm2s = [
-            nn.LSTM(
-                input_size=self.tsec_lstm1_outshape,
-                hidden_size=interday_hiddenDim,
-                num_layers=interday_numLayers,
-                batch_first=True,
-                bidirectional=False,
-            )
-            for _ in range(num_stocks)
-        ]
-        
-        for i, day_lstm in enumerate(self.tsec_lstm2s):
-            self.add_module("tsec_lstm2_{}".format(i), day_lstm)
             
             
         self.sec_lstm2s = [
@@ -712,18 +513,6 @@ class Critic(nn.Module):
                          for _ in range(num_stocks)]
         for i, linear_x in enumerate(self.sec_linearx2):
             self.add_module("sec_linearx2_{}".format(i), linear_x)
-            
-        self.linear_mergex1 = [
-        nn.Linear(self.lstm2_outshape, self.lstm2_outshape)
-        for _ in range(num_stocks)
-        ]
-        for i, linear_x in enumerate(self.linear_mergex1):
-            self.add_module("linear_mergex1_{}".format(i), linear_x)
-            
-        self.linear_mergex2 = [nn.Linear(self.lstm2_outshape, 64)
-                         for _ in range(num_stocks)]
-        for i, linear_x in enumerate(self.linear_mergex2):
-            self.add_module("linear_mergex2_{}".format(i), linear_x)
         
 
         self.linear_c = nn.Linear(64 * num_stocks + 32, 32)
@@ -735,7 +524,7 @@ class Critic(nn.Module):
         self.linear_sa1 = nn.Linear(64, 32)
         self.linear_sa2 = nn.Linear(32, 1)
         self.device = device
-        self.attn_x = attn_x(64, 128)
+        self.attn_x = attn_x(64, 64)
     def init_hidden(self):
         h = Variable(torch.zeros(self.bs, self.lstm1_outshape)).to(self.device)
         c = Variable(torch.zeros(self.bs, self.lstm2_outshape)).to(self.device)
@@ -750,43 +539,23 @@ class Critic(nn.Module):
         stock_feats = state[:, 0: 2 * self.num_stocks + 1].view(
             -1, 2 * self.num_stocks + 1
         )
-        # print("stock_feats:", stock_feats)
         sentence_feat = state[:, EMB_IDX:LEN_IDX].view(
             -1, self.num_stocks, N_DAYS, MAX_TWEETS, TWEETS_EMB
         )
         len_tweets = state[:,
                            LEN_IDX:TARGET_IDX].view(-1, self.num_stocks, N_DAYS)
         
-        if INPUT_TEXT=="tweetonly":
-            time_feats = state[:,
-                           TIME_IDX:].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
+        time_feats = state[:,
+                           TIME_IDX:SECEMB_IDX].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
         
-        
-        elif INPUT_TEXT=="withSEC":
-            time_feats = state[:,
-                            TIME_IDX:SECEMB_IDX].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
-            
-            sec_feats = state[:,
-                            SECEMB_IDX:].view(-1, self.num_stocks, MAX_SECS, TWEETS_EMB) 
-
-        elif INPUT_TEXT=="withtimefeatsSEC":
-            time_feats = state[:,
-                            TIME_IDX:SECEMB_IDX].view(-1, self.num_stocks, N_DAYS, MAX_TWEETS)
-            
-            sec_feats = state[:,
-                            SECEMB_IDX:SECTIME_IDX].view(-1, self.num_stocks, MAX_SECS, TWEETS_EMB)
-            
-            sec_time_feats = state[:,
-                            SECTIME_IDX:].view(-1, self.num_stocks, MAX_SECS)
+        sec_feats = state[:,
+                           SECEMB_IDX:].view(-1, self.num_stocks, MAX_SECS, TWEETS_EMB) 
 
         self.bs = sentence_feat.size(0)
         sentence_feat = sentence_feat.permute(1, 2, 0, 3, 4)
         len_tweets = len_tweets.permute(1, 2, 0)
         time_feats = time_feats.permute(1, 2, 0, 3)
-        if INPUT_TEXT=="withSEC" or INPUT_TEXT=="withtimefeatsSEC":
-            sec_feats =sec_feats.permute(1, 0, 2, 3) 
-        if INPUT_TEXT=="withtimefeatsSEC":
-            sec_time_feats = sec_time_feats.permute(1, 2, 0)
+        sec_feats =sec_feats.permute(1, 0, 2, 3) #num_stock, 1, secの数, embeddingsize
         
         num_days = N_DAYS
         text_out = torch.zeros(self.num_stocks, self.bs, 64).to(self.device)
@@ -819,73 +588,31 @@ class Critic(nn.Module):
             x1 = self.drop(self.relu(self.linearx1[i](x1)))
             x1 = self.linearx2[i](x1)
             # text_out[i] = x
-            if INPUT_TEXT=="tweetonly":
-                x = x1
             
-            elif INPUT_TEXT=="withSEC":
-                #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
-                temp_sec = sec_feats[i, :, :, :]
-                # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
-                # lstm1_out = lstm1_out.permute(1, 0, 2) #不要
-                sec_lstm2_out, (sec_h2_out, _) = self.sec_lstm2s[i](temp_sec.to(self.device)) #secに対してlstm層を入れる意味はあるか？
-                # print("sec_lstm2_out.shape, sec_h2_out.shape", sec_lstm2_out.shape, sec_h2_out.shape)
-                sec_h2_out = sec_h2_out.permute(1, 0, 2)
-                x2 = self.sec_attn2s[i](lstm2_out, h2_out)
-                x2 = self.drop(self.relu(self.sec_linearx1[i](x2)))
-                x2 = self.sec_linearx2[i](x2)
-                # print("x2.shape", x2.shape) #[1, 64]
-                
-                #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                # print("x.shape", x.shape)
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
-                
-            elif INPUT_TEXT=="withtimefeatsSEC":
-                #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
-                temp_sec = sec_feats[i, :, :, :]
-                temp_sec_time_feats = sec_time_feats[i, :, :]
-                # print("temp_sec_time_feats",temp_sec_time_feats)
-                
-                # print("temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape", temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape)
-                sec_lstmout, (_, _) = self.tsec_lstm1s[i]( #TLSTM
-                    temp_sec, temp_sec_time_feats, (h_init, c_init)
-                )
-
-                sec_lstm2_out, (sec_h2_out, _) = self.tsec_lstm2s[i](sec_lstmout) #tsecであることに注意
-                sec_h2_out = sec_h2_out.permute(1, 0, 2)
-                x2 = self.sec_attn2s[i](sec_lstm2_out, sec_h2_out) #これが正しいのでは
-                x2 = self.drop(self.relu(self.sec_linearx1[i](x2))) 
-                # print("x2.shape", x2.shape)
-                x2 = self.sec_linearx2[i](x2)
-                # print("x2.shape", x2.shape) #[1, 64]
-                
-                #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                # print("x.shape", x.shape)
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
+            #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
+            temp_sec = sec_feats[i, :, :, :]
+            # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
+            # lstm1_out = lstm1_out.permute(1, 0, 2) #不要
+            sec_lstm2_out, (sec_h2_out, _) = self.sec_lstm2s[i](temp_sec.to(self.device)) #secに対してlstm層を入れる意味はあるか？
+            # print("sec_lstm2_out.shape, sec_h2_out.shape", sec_lstm2_out.shape, sec_h2_out.shape)
+            sec_h2_out = sec_h2_out.permute(1, 0, 2)
+            x2 = self.sec_attn2s[i](lstm2_out, h2_out)
+            x2 = self.drop(self.relu(self.sec_linearx1[i](x2)))
+            x2 = self.sec_linearx2[i](x2)
+            # print("x2.shape", x2.shape) #[1, 64]
             
+            #x1, x2に対してattn
+            x = self.attn_x(x1, x2) #これ正しいか怪しい
+            # print("x.shape", x.shape)
             text_out[i] = x
 
         text_out = text_out.permute(1, 0, 2)
-        # text_out = text_out.view(self.bs, -1)
-        text_out = text_out.reshape(self.bs, -1)
+        text_out = text_out.view(self.bs, -1)
 
-        # print("text_out", text_out)
         x_stock = self.relu(self.linear1(stock_feats))
-        # print("x_stock:", x_stock)
         x_stock = self.linear2(x_stock)
-        # print("x_stock:", x_stock)
 
         full = torch.cat([x_stock, text_out], dim=1)
-        # print("full2:",full)
         full = self.linear_c(full)
 
         actions = self.linear_critic(actions)
@@ -893,7 +620,5 @@ class Critic(nn.Module):
         full = torch.cat([full, actions], dim=1)
         full = self.relu(self.linear_sa1(full))
         full = self.linear_sa2(full)
-        
-        # print("full:", full)
 
         return full

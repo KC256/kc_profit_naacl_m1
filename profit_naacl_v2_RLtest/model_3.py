@@ -81,26 +81,20 @@ class attn(torch.nn.Module):
         lens: B*1
         """
         if self.use_attention: #これが実行される
-            # print("use_attention:", full.shape, last.shape)
             score = self.V(F.tanh(self.W1(last) + self.W2(full)))
-            # print("score:", score)
             # print(full.shape, last.shape)
             # print(score.shape) #-> B*30*1 この形にならない 30を今回のinputデータに合う形に変更必要　config的な感じで変更
             # print(self.W1(last).shape, self.W2(full).shape)
-            # print("lens:", lens)
-            lens = None #0218
+
             if lens != None:
                 mask = self.arange[None, :] < lens[:, None]  # B*30
                 # print(score.shape, mask.shape)
                 # print(score)
                 score[~mask] = float("-inf")
-                
-            # print("score2:", score) #ここが-infになる
+
             attention_weights = F.softmax(score, dim=dim)
-            # print("attention_weights", attention_weights)
             context_vector = attention_weights * full
             context_vector = torch.sum(context_vector, dim=dim)
-            # print("context_vector", context_vector)
             return context_vector  # B*in_shape
         else:
             if lens != None:
@@ -339,16 +333,13 @@ class Actor(nn.Module):
 
     def forward(self, state):
         state = state.view(-1, FEAT_DIMS)
-        print("state.shape", state.shape)
+        # print("state.shape", state.shape)
         stock_feats = state[:, 0: 2 * self.num_stocks + 1].view(
             -1, 2 * self.num_stocks + 1
         ) #cashとlastprice(銘柄の前日の株価)を示すcash
         sentence_feat = state[:, EMB_IDX:LEN_IDX].view(
             -1, self.num_stocks, N_DAYS, MAX_TWEETS, TWEETS_EMB
         )
-        
-        # print("isnan(sentence_feat)before", torch.isnan(sentence_feat).any())
-        
         len_tweets = state[:,
                            LEN_IDX:TARGET_IDX].view(-1, self.num_stocks, N_DAYS)
         
@@ -398,58 +389,45 @@ class Actor(nn.Module):
             lstm1_out = torch.zeros(num_days, self.bs, self.lstm1_outshape).to(
                 self.device
             )
-            for j in range(num_days): #各日付
-                temp_sent = sentence_feat[i, j, :, :, :] #ここで企業と日付決定 ある企業のある日のtweetsそのもの
-                temp_len = len_tweets[i, j, :] #ある企業のある日のtweetsの数
-                temp_timefeats = time_feats[i, j, :, :] #ある企業のある日のtweets同士の時間差　temp_len temp_timefeats 決算報告書にはいらん
-                # print("temp_time_feats:", temp_timefeats.shape)
-                # print("temp_len, temp_timefeats:", temp_len, temp_timefeats)
+            # for j in range(num_days): #各日付
+            #     temp_sent = sentence_feat[i, j, :, :, :] #ここで企業と日付決定 ある企業のある日のtweetsそのもの
+            #     temp_len = len_tweets[i, j, :] #ある企業のある日のtweetsの数
+            #     temp_timefeats = time_feats[i, j, :, :] #ある企業のある日のtweets同士の時間差　temp_len temp_timefeats 決算報告書にはいらん
+            #     # print("temp_time_feats:", temp_timefeats.shape)
+            #     # print("temp_len, temp_timefeats:", temp_len, temp_timefeats)
 
-                temp_lstmout, (_, _) = self.lstm1s[i]( #TLSTM
-                    temp_sent, temp_timefeats, (h_init, c_init)
-                )
-                # print("temp_sent", torch.isnan(temp_sent).any())
-                # print("temp_timefeats", torch.isnan(temp_timefeats).any())
-                # print("temp_lstmout", torch.isnan(temp_lstmout).any())
-                # print("temp_lstmout:", temp_lstmout)
-                # print("temp_lstmout.shape:", temp_lstmout.shape) #torch.Size([1, 30, 128])
-
-                last_idx = temp_len.type(torch.int).tolist()
-                temp_hn = torch.zeros(self.bs, self.lstm1_outshape).to(self.device)
-                for k in range(self.bs): #self.bs = 1
-                    if last_idx[k] != 0:
-                        temp_hn[k] = temp_lstmout[k, last_idx[k] - 1, :]
-                        
-                # print("torch.isnan(temp_hn).any():", torch.isnan(temp_hn).any()) #false
-                # print("torch.isnan(temp_len.to(self.device)).any():", torch.isnan(temp_len.to(self.device)).any())  #false
-                lstm1_out[j] = self.attn1s[i](temp_lstmout, temp_hn, temp_len.to(self.device)) #Attn 第二引数は最後の単語
-                # print("lstm1_out[j].shape", lstm1_out[j].shape)
-                # print("lstm1_out[j]", lstm1_out[j])
-                # print(f"torch.isnan(lstm1_out[{j}]).any():", torch.isnan(lstm1_out[j]).any()) #true ここでNan発生
-                # print(f"lstm1_out[{j}]:", lstm1_out[j])
+            #     temp_lstmout, (_, _) = self.lstm1s[i]( #TLSTM
+            #         temp_sent, temp_timefeats, (h_init, c_init)
+            #     )
                 
-            # print("lstm1_out.shape ", lstm1_out.shape)#lookback_len, 1, 128
-            # print("torch.isnan(lstm1_out).any():", torch.isnan(lstm1_out).any()) #true
-            # if(torch.isnan(lstm1_out).any()): 
-            #     print("lstm1_out has Nan") #この時点で0以外Nan
-            lstm1_out = lstm1_out.permute(1, 0, 2)#1, lookback_len, 128
-            lstm2_out, (h2_out, _) = self.lstm2s[i](lstm1_out) #隠れ層h2outを得るため
-            # print("lstm2_out.shape, h2_out.shape", lstm2_out.shape, h2_out.shape)
-            h2_out = h2_out.permute(1, 0, 2)
-            x1 = self.attn2s[i](lstm2_out, h2_out) #lstm2_outは7日分のツイート30*7を含む　h2outはその隠れ層
-            # print("x1.shape ", x1.shape)
-            x1 = self.drop(self.relu(self.linearx1[i](x1))) #drop:過学習防止　relu:入力が0以下の時0を出力　
-            # print("x1.shape ", x1.shape)
-            x1 = self.linearx2[i](x1)
-            # print("x1.shape ", x1.shape)
-            # text_out[i] = x1 #これが最終的な特徴量p1　これをp10としてp11とattnする
+            #     # print("temp_lstmout:", temp_lstmout)
+            #     # print("temp_lstmout.shape:", temp_lstmout.shape) #torch.Size([1, 30, 128])
+
+            #     last_idx = temp_len.type(torch.int).tolist()
+            #     temp_hn = torch.zeros(self.bs, self.lstm1_outshape).to(self.device)
+            #     for k in range(self.bs): #self.bs = 1
+            #         if last_idx[k] != 0:
+            #             temp_hn[k] = temp_lstmout[k, last_idx[k] - 1, :]
+            #     lstm1_out[j] = self.attn1s[i](temp_lstmout, temp_hn, temp_len.to(self.device)) #Attn 第二引数は最後の単語
+            #     # print("lstm1_out[j].shape", lstm1_out[j].shape)
+            #     # print("lstm1_out[j]", lstm1_out[j])
+
+            # # print("lstm1_out.shape ", lstm1_out.shape)#lookback_len, 1, 128
+            # lstm1_out = lstm1_out.permute(1, 0, 2)#1, lookback_len, 128
+            # lstm2_out, (h2_out, _) = self.lstm2s[i](lstm1_out) #隠れ層h2outを得るため
+            # # print("lstm2_out.shape, h2_out.shape", lstm2_out.shape, h2_out.shape)
+            # h2_out = h2_out.permute(1, 0, 2)
+            # x1 = self.attn2s[i](lstm2_out, h2_out) #lstm2_outは7日分のツイート30*7を含む　h2outはその隠れ層
+            # # print("x1.shape ", x1.shape)
+            # x1 = self.drop(self.relu(self.linearx1[i](x1))) #drop:過学習防止　relu:入力が0以下の時0を出力　
+            # # print("x1.shape ", x1.shape)
+            # x1 = self.linearx2[i](x1)
+            # # print("x1.shape ", x1.shape)
+            # # text_out[i] = x1 #これが最終的な特徴量p1　これをp10としてp11とattnする
+            # if INPUT_TEXT=="tweetonly":
+            #     x = x1
             
-            # if(torch.isnan(text_out).any()): 
-            #     print(i, "has Nan") #この時点で0以外Nan
-            if INPUT_TEXT=="tweetonly":
-                x = x1
-            
-            elif INPUT_TEXT=="withSEC":
+            if INPUT_TEXT=="withSEC":
                 #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
                 temp_sec = sec_feats[i, :, :, :]
                 # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
@@ -465,27 +443,28 @@ class Actor(nn.Module):
                 # print("x2.shape", x2.shape) #[1, 64]
                 
                 #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
+                x = x2
                 
                 
             elif INPUT_TEXT=="withtimefeatsSEC":
                 #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
                 temp_sec = sec_feats[i, :, :, :]
-                temp_sec_time_feats = sec_time_feats[i, :, :]
-                print("temp_sec",temp_sec.shape)
-                print("temp_sec_time_feats",temp_sec_time_feats.shape)
                 
-                # print("temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape", temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape)
+                #sectimefeats と secに対しlstm1
+                # num_SEC = MAX_SECS
+                # for k in range(num_SEC):
+                #     temp_sec_time_feats = sec_time_feats[i, k, :] #ある企業のある日のtweets同士の時間差　temp_len temp_timefeats 決算報告書にはいらん
+                #     print("temp_sec_time_feats",temp_sec_time_feats)
+                temp_sec_time_feats = sec_time_feats[i, :, :]
+                # print("temp_sec_time_feats",temp_sec_time_feats)
+                # print("train temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape", temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape)
                 sec_lstmout, (_, _) = self.tsec_lstm1s[i]( #TLSTM
                     temp_sec, temp_sec_time_feats, (h_init, c_init)
                 )
+                # print(sec_lstmout.shape, temp_sec.shape)
 
                 sec_lstm2_out, (sec_h2_out, _) = self.tsec_lstm2s[i](sec_lstmout) #tsecであることに注意
+                # print("hoge")
                 sec_h2_out = sec_h2_out.permute(1, 0, 2)
                 x2 = self.sec_attn2s[i](sec_lstm2_out, sec_h2_out) #これが正しいのでは
                 x2 = self.drop(self.relu(self.sec_linearx1[i](x2))) 
@@ -494,68 +473,20 @@ class Actor(nn.Module):
                 # print("x2.shape", x2.shape) #[1, 64]
                 
                 #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                # print("x.shape", x.shape)
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
+                x = x2
             
             text_out[i] = x
-            # if(torch.isnan(x).any()):
-                
             
-        # print("isnan(text_out)before", torch.isnan(text_out).any())
-        # nan_count = torch.isnan(text_out).sum().item()  # NaN の数を取得
-        # print(f"Number of NaN elements in text_out: {nan_count}")
+
         text_out = text_out.permute(1, 0, 2)
-        # text_out = torch.nan_to_num(text_out, nan=0.0) 
-        # text_out = text_out.view(self.bs, -1)
-        text_out = text_out.reshape(self.bs, -1)
-        # print("isnan(stock_feats)", torch.isnan(stock_feats).any())
-        # print("isnan(self.linear1.weight):", torch.isnan(self.linear1.weight).any())  # True なら `NaN` を含んでいる
-        # print("isnan(self.linear2.weight):", torch.isnan(self.linear2.weight).any())  # True なら `NaN` を含んでいる
-        # print("stock_feats.shape:", stock_feats.shape)
-        # print("isnan(stock_feats)", torch.isnan(stock_feats).any())
+        text_out = text_out.view(self.bs, -1)
         x_stock = self.relu(self.linear1(stock_feats))
         x_stock = self.linear2(x_stock)
-        # x_stock = torch.nan_to_num(x_stock, nan=0.0) 
-        # print("text_out:", text_out)
-
-        # print("isnan(text_out)", torch.isnan(text_out).any())
-        # print("isnan(x_stock)", torch.isnan(x_stock).any())
-        # print("self.linear1.weight:", self.linear1.weight)
-        # print("self.linear1.bias:", self.linear1.bias)
 
         full = torch.cat([x_stock, text_out], dim=1)
-        print("full:", full)
-        # full = torch.nan_to_num(full, nan=0.0) #1210 Nanによるエラー回避
-        # print("isnan(full)", torch.isnan(full).any())  # full に NaN が含まれているか
-        # print("full.shape:", full.shape)
-        # print("self.linear_c:", self.linear_c) 
-        full = self.linear_c(full)
-        # print("full2:", full)
-        # print("full before tahn:", full, full.shape)
-        
-        # 平均と標準偏差を計算
-        mean = full.mean()
-        # print("mean:", mean)
-        std = full.std()
-        # print("std:", std)
-
-        # 標準化
-        normalized_tensor = (full - mean) / std
-        normalized_tensor = torch.nan_to_num(normalized_tensor, nan=0.0) #1210 Nanによるエラー回避
-        print("normalized_tensor", normalized_tensor)
-        
-        # full = self.tanh(full)
-        # # print("full.shape", full.shape)
-        # print("full:", full, full.shape)
-        
-        
-        
-        return normalized_tensor #full
+        full = self.tanh(self.linear_c(full))
+        # print("full.shape", full.shape)
+        return full
 
 class Critic(nn.Module):
     """
@@ -795,34 +726,34 @@ class Critic(nn.Module):
             lstm1_out = torch.zeros(num_days, self.bs, self.lstm1_outshape).to(
                 self.device
             )
-            for j in range(num_days):
-                temp_sent = sentence_feat[i, j, :, :, :]
-                temp_len = len_tweets[i, j, :]
-                temp_timefeats = time_feats[i, j, :, :]
+            # for j in range(num_days):
+            #     temp_sent = sentence_feat[i, j, :, :, :]
+            #     temp_len = len_tweets[i, j, :]
+            #     temp_timefeats = time_feats[i, j, :, :]
 
-                temp_lstmout, (_, _) = self.lstm1s[i](
-                    temp_sent, temp_timefeats, (h_init, c_init)
-                )
-                last_idx = temp_len.type(torch.int).tolist()
-                temp_hn = torch.zeros(self.bs, self.lstm1_outshape).to(self.device)
-                for k in range(self.bs):
-                    if last_idx[k] != 0:
-                        temp_hn[k] = temp_lstmout[k, last_idx[k] - 1, :]
+            #     temp_lstmout, (_, _) = self.lstm1s[i](
+            #         temp_sent, temp_timefeats, (h_init, c_init)
+            #     )
+            #     last_idx = temp_len.type(torch.int).tolist()
+            #     temp_hn = torch.zeros(self.bs, self.lstm1_outshape).to(self.device)
+            #     for k in range(self.bs):
+            #         if last_idx[k] != 0:
+            #             temp_hn[k] = temp_lstmout[k, last_idx[k] - 1, :]
 
-                lstm1_out[j] = self.attn1s[i](temp_lstmout, temp_hn, temp_len.to(self.device))
+            #     lstm1_out[j] = self.attn1s[i](temp_lstmout, temp_hn, temp_len.to(self.device))
 
-            lstm1_out = lstm1_out.permute(1, 0, 2)
-            lstm2_out, (h2_out, _) = self.lstm2s[i](lstm1_out)
-            h2_out = h2_out.permute(1, 0, 2)
-            x1 = self.attn2s[i](lstm2_out, h2_out)
+            # lstm1_out = lstm1_out.permute(1, 0, 2)
+            # lstm2_out, (h2_out, _) = self.lstm2s[i](lstm1_out)
+            # h2_out = h2_out.permute(1, 0, 2)
+            # x1 = self.attn2s[i](lstm2_out, h2_out)
 
-            x1 = self.drop(self.relu(self.linearx1[i](x1)))
-            x1 = self.linearx2[i](x1)
-            # text_out[i] = x
-            if INPUT_TEXT=="tweetonly":
-                x = x1
+            # x1 = self.drop(self.relu(self.linearx1[i](x1)))
+            # x1 = self.linearx2[i](x1)
+            # # text_out[i] = x
+            # if INPUT_TEXT=="tweetonly":
+            #     x = x1
             
-            elif INPUT_TEXT=="withSEC":
+            if INPUT_TEXT=="withSEC":
                 #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
                 temp_sec = sec_feats[i, :, :, :]
                 # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
@@ -836,13 +767,7 @@ class Critic(nn.Module):
                 # print("x2.shape", x2.shape) #[1, 64]
                 
                 #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                # print("x.shape", x.shape)
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
+                x = x2
                 
             elif INPUT_TEXT=="withtimefeatsSEC":
                 #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
@@ -864,19 +789,12 @@ class Critic(nn.Module):
                 # print("x2.shape", x2.shape) #[1, 64]
                 
                 #x1, x2に対してattn
-                x = self.attn_x(x1, x2) #これ正しいか怪しい
-                # print("x.shape", x.shape)
-                
-                #MLP dropout relu（activation)等入れてみる xにx1,x2同様の処理をdrop linear model_2要素
-                x = self.drop(self.relu(self.linear_mergex1[i](x))) #ここmodelでself.sec_linearx1になってた
-                # print("x.shape", x.shape)
-                x = self.linear_mergex2[i](x)
+                x = x2
             
             text_out[i] = x
 
         text_out = text_out.permute(1, 0, 2)
-        # text_out = text_out.view(self.bs, -1)
-        text_out = text_out.reshape(self.bs, -1)
+        text_out = text_out.view(self.bs, -1)
 
         # print("text_out", text_out)
         x_stock = self.relu(self.linear1(stock_feats))

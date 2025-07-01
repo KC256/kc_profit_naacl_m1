@@ -1,0 +1,13 @@
+nohup: 入力を無視します
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2025-04-10 15:25:16.510847
+INPUT_TEXT: tweetonly
+USING_MODEL: model_2
+output is not made
+train_pickle:  ../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-12-01~2015-12-31_20_7_5_384.pkl
+test_pickle:  ../../datasets/dummy_byfingpt-forcaster_0402
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v2/main.py", line 338, in <module>
+    with open(train_pickle, "rb") as f:
+FileNotFoundError: [Errno 2] No such file or directory: '../../datasets/pickles_0tumeru/S_test_data_sorted_in_jsons_6_2015-12-01~2015-12-31_20_7_5_384.pkl'

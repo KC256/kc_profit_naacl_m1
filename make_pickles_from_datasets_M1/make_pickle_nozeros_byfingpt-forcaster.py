@@ -40,7 +40,8 @@ parts = folder_path.split('/')
 folder_name = parts[-1]
 
 stock_price_folder = "/home/fukuda/M1_reserch/datasets/stocknet-dataset/price/raw"
-save_dir = "/home/fukuda/M1_reserch/datasets/pickles_0tumeru_byfingpt-forcaster"
+# save_dir = "/home/fukuda/M1_reserch/datasets/pickles_0tumeru_byfingpt-forcaster"
+save_dir = "/home/fukuda/M1_reserch/experiment/0910/pickle_make_test"
 
 text_difficulty = torch.ones(num_stocks)
 volatility = torch.ones(num_stocks)
@@ -311,8 +312,8 @@ def make_pickle(date_start, date_end):
 
 # date_starts = ["2015-01-01", "2015-04-01", "2015-07-01", "2015-10-01"]
 # date_ends = ["2015-03-31", "2015-06-30", "2015-09-30", "2015-12-31"]
-date_starts = ["2015-01-01"]
-date_ends = ["2015-09-30"]
+date_starts = ["2014-02-01"]
+date_ends = ["2015-12-31"]
 print("start")
 for date_start, date_end in zip(date_starts, date_ends):
     print("Start Date:", date_start)

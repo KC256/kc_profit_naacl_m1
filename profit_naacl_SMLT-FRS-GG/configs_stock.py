@@ -19,7 +19,7 @@ TIME_FEATS = STOCK_DIM * N_DAYS * MAX_TWEETS #ツイート間の時間差
 SEC_TIME_FEATS = STOCK_DIM * MAX_SECS #SECの決算報告書をtarget_dayの日付差
 
 INPUT_TEXT = "SMLT-FRS-GG" #tweetonly withSEC withtimefeatsSEC SMLT-FRS-G
-USING_MODEL = "model_12" #model_2, model_4, model_3，model_5(SMLT-FRS株価使用)
+USING_MODEL = "model_14" #model_2, model_4, model_3，model_5(SMLT-FRS株価使用)
 TRANSACTION_FEE_PERCENT = 0.000495 #0.000495
 
 SELECT_ACTION ="default" #ddpgのselect_actionにてどのようにactionを出力するか（ランダムアクション部）

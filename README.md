@@ -1,4 +1,9 @@
 
+粒度の考慮
+20250911以降
+
+
+
 cd ./profit_naacl_new　下で実行
 
 resume_folder_pathの例：/home/fukuda/output/Humanoid-v2-run226

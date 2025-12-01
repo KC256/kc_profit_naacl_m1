@@ -59,6 +59,12 @@ class DDPG(object):
         elif USING_MODEL=="model_12": # この行を追加
             from model_12 import Actor, Critic # この行を追加
             
+        elif USING_MODEL=="model_13": # この行を追加
+            from model_13 import Actor, Critic # この行を追加
+            
+        elif USING_MODEL=="model_14": # この行を追加
+            from model_13 import Actor, Critic # この行を追加
+            
         self.actor = Actor() #UnboundLocalError: local variable 'Actor' referenced before assignment
         self.actor_target = Actor()
         self.actor_optim = Adam(self.actor.parameters(), lr=args.prate)

@@ -152,7 +152,7 @@ class StockEnvTrade(gym.Env):
                 
             )
             
-        elif INPUT_TEXT=="SMLT-FRS-G":
+        elif INPUT_TEXT=="SMLT-FRS-GG":
                 sec_emb_data = self.data["emb_Discussion_and_Analysis"].view(-1).tolist()
                 sec_time_feats = self.data["SEC_time_features"].view(-1).tolist()
                 # closing_prices_5d = self.data["closing_prices_5d"].view(-1).tolist()
@@ -161,6 +161,7 @@ class StockEnvTrade(gym.Env):
                 len_data_2 = self.data["length_data_2"].view(-1).tolist()
                 emb_data_2 = self.data["embedding_2"].view(-1).tolist()
                 time_feats_2 = self.data["time_features_2"].view(-1).tolist()
+                closing_prices_5d_2 = self.data["closing_prices_5d_2"].reshape(-1).tolist()
                 self.state = (
                     [int(args.initial_account_balance)]  # balance
                     + last_price  # stock prices initial
@@ -181,6 +182,7 @@ class StockEnvTrade(gym.Env):
                     + emb_data_2
                     + len_data_2
                     + time_feats_2
+                    + closing_prices_5d_2
                 )
             # print("分岐成功")
         # print(len(self.state), len(emb_data))
@@ -613,7 +615,7 @@ class StockEnvTrade(gym.Env):
                     + closing_prices_5d
                 )
                 
-            elif INPUT_TEXT=="SMLT-FRS-G":
+            elif INPUT_TEXT=="SMLT-FRS-GG":
                 sec_emb_data = self.data["emb_Discussion_and_Analysis"].view(-1).tolist()
                 sec_time_feats = self.data["SEC_time_features"].view(-1).tolist()
                 # closing_prices_5d = self.data["closing_prices_5d"].view(-1).tolist()
@@ -622,6 +624,7 @@ class StockEnvTrade(gym.Env):
                 len_data_2 = self.data["length_data_2"].view(-1).tolist()
                 emb_data_2 = self.data["embedding_2"].view(-1).tolist()
                 time_feats_2 = self.data["time_features_2"].view(-1).tolist()
+                closing_prices_5d_2 = self.data["closing_prices_5d_2"].reshape(-1).tolist()
                 self.state = (
                     [self.state[0]]  # balance
                     + last_price  # stock prices initial
@@ -642,6 +645,7 @@ class StockEnvTrade(gym.Env):
                     + emb_data_2
                     + len_data_2
                     + time_feats_2
+                    + closing_prices_5d_2
                 )
                 
             # print("self.reward", self.reward)
@@ -729,7 +733,7 @@ class StockEnvTrade(gym.Env):
                     + closing_prices_5d
                 )
                 
-            elif INPUT_TEXT=="SMLT-FRS-G":
+            elif INPUT_TEXT=="SMLT-FRS-GG":
                 sec_emb_data = self.data["emb_Discussion_and_Analysis"].view(-1).tolist()
                 sec_time_feats = self.data["SEC_time_features"].view(-1).tolist()
                 # closing_prices_5d = self.data["closing_prices_5d"].view(-1).tolist()
@@ -738,6 +742,7 @@ class StockEnvTrade(gym.Env):
                 len_data_2 = self.data["length_data_2"].view(-1).tolist()
                 emb_data_2 = self.data["embedding_2"].view(-1).tolist()
                 time_feats_2 = self.data["time_features_2"].view(-1).tolist()
+                closing_prices_5d_2 = self.data["closing_prices_5d_2"].reshape(-1).tolist()
                 # print("emb_data_2 len:", len(emb_data_2))
                 # print("self.previous_state len:", len(self.previous_state))
                 self.state = (
@@ -760,6 +765,7 @@ class StockEnvTrade(gym.Env):
                     + emb_data_2
                     + len_data_2
                     + time_feats_2
+                    + closing_prices_5d_2
                 )
                 
         else:
@@ -848,7 +854,7 @@ class StockEnvTrade(gym.Env):
                     + closing_prices_5d
                 )
                 
-            elif INPUT_TEXT=="SMLT-FRS-G":
+            elif INPUT_TEXT=="SMLT-FRS-GG":
                 sec_emb_data = self.data["emb_Discussion_and_Analysis"].view(-1).tolist()
                 sec_time_feats = self.data["SEC_time_features"].view(-1).tolist()
                 # closing_prices_5d = self.data["closing_prices_5d"].view(-1).tolist()
@@ -857,6 +863,7 @@ class StockEnvTrade(gym.Env):
                 len_data_2 = self.data["length_data_2"].view(-1).tolist()
                 emb_data_2 = self.data["embedding_2"].view(-1).tolist()
                 time_feats_2 = self.data["time_features_2"].view(-1).tolist()
+                closing_prices_5d_2 = self.data["closing_prices_5d_2"].reshape(-1).tolist()
                 self.state = (
                     [self.previous_state[0]]  # balance
                     + last_price  # stock prices initial
@@ -878,6 +885,7 @@ class StockEnvTrade(gym.Env):
                     + emb_data_2
                     + len_data_2
                     + time_feats_2
+                    + closing_prices_5d_2
                 )
 
         return self.state

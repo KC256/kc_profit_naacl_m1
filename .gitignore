@@ -6,4 +6,8 @@ nodhup_outputs/
 output_2/
 experiment/
 profit_naacl_v2/output_m1/
+profit_naacl_v2/output_m1/
 profit_naacl_v2/temp_output.log
+SMLT-FRS-G-model12
+SMLT-FRS-G-model11
+*.pkl

@@ -76,7 +76,7 @@ def train(
             
         #savemodel_stepsごとにモデル保存
         savemodel_steps = 5440
-        if (step % savemodel_steps == 0 and step!=0) or step==2720:
+        if (step % savemodel_steps == 0 and step!=0) or step==7 or step==2720:
             print("save model step", step)
             agent.save_model_bysteps(output, step)
 

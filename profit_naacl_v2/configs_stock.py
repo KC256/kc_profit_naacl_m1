@@ -10,14 +10,14 @@ STOCK_DIM = 20 #修正 87 12
 N_DAYS = 7 #修正
 # MAX_TWEETS = 30
 MAX_TWEETS = 5 #修正
-MAX_SECS = 2#1targetday1あたりのsecの数
+MAX_SECS = 1#1targetday1あたりのsecの数
 MAX_LEN = MAX_TWEETS #追加 maxlenの値
 TWEETS_EMB = 384 #768 4096 384
 TIME_FEATS = STOCK_DIM * N_DAYS * MAX_TWEETS #ツイート間の時間差
 SEC_TIME_FEATS = STOCK_DIM * MAX_SECS #SECの決算報告書をtarget_dayの日付差
 
-INPUT_TEXT = "tweetonly" #tweetonly withSEC withtimefeatsSEC
-USING_MODEL = "model_2" #model_2, model_4, model_3
+INPUT_TEXT = "withtimefeatsSEC" #tweetonly withSEC withtimefeatsSEC
+USING_MODEL = "model_3" #model_2, model_4, model_3
 TRANSACTION_FEE_PERCENT = 0.000495 #0.000495
 
 SELECT_ACTION ="default" #ddpgのselect_actionにてどのようにactionを出力するか（ランダムアクション部）

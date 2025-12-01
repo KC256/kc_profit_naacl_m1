@@ -1,0 +1,12 @@
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2025-07-07 00:58:13.489625
+INPUT_TEXT: withtimefeatsSEC
+USING_MODEL: model_6
+output is not made
+train_pickle:  None
+test_pickle:  /home/fukuda/M1_reserch/datasets/pickles_oneSECtimefeature_0tumeru_byfingpt_with_closing_prices_7d/S_test_data_sorted_in_jsons_6_2015-11-01~2015-11-30_20_7_5_384_with_closing_prices_5d.pkl
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v2.1/main.py", line 338, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType

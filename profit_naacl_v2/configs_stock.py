@@ -5,7 +5,7 @@ HMAX_NORMALIZE = 10 #100
 INITIAL_ACCOUNT_BALANCE = 100000 #100000
 # total number of stocks in our portfolio
 # STOCK_DIM = 88 
-STOCK_DIM = 20 #修正 87 12
+STOCK_DIM = 22 #修正 87 12
 # N_DAYS = 7
 N_DAYS = 7 #修正
 # MAX_TWEETS = 30
@@ -17,7 +17,7 @@ TIME_FEATS = STOCK_DIM * N_DAYS * MAX_TWEETS #ツイート間の時間差
 SEC_TIME_FEATS = STOCK_DIM * MAX_SECS #SECの決算報告書をtarget_dayの日付差
 
 INPUT_TEXT = "withtimefeatsSEC" #tweetonly withSEC withtimefeatsSEC
-USING_MODEL = "model_3" #model_2, model_4, model_3
+USING_MODEL = "model_2" #model_2, model_4, model_3
 TRANSACTION_FEE_PERCENT = 0.000495 #0.000495
 
 SELECT_ACTION ="default" #ddpgのselect_actionにてどのようにactionを出力するか（ランダムアクション部）

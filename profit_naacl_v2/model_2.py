@@ -477,8 +477,8 @@ class Actor(nn.Module):
                 #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
                 temp_sec = sec_feats[i, :, :, :]
                 temp_sec_time_feats = sec_time_feats[i, :, :]
-                print("temp_sec",temp_sec.shape)
-                print("temp_sec_time_feats",temp_sec_time_feats.shape)
+                # print("temp_sec",temp_sec.shape)
+                # print("temp_sec_time_feats",temp_sec_time_feats.shape)
                 
                 # print("temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape", temp_sec.shape, temp_sec_time_feats.shape, sec_time_feats.shape)
                 sec_lstmout, (_, _) = self.tsec_lstm1s[i]( #TLSTM

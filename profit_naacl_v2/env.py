@@ -390,7 +390,11 @@ class StockEnvTrade(gym.Env):
             print("daybefore_stockprices:", self.daybefore_stockprices)
             if self.day==0:
                 self.daybefore_stockprices=self.state[TARGET_IDX:PRICEDIFF_IDX]
-            stockprices_raio = [a / b for a, b in zip(self.state[TARGET_IDX:PRICEDIFF_IDX], self.daybefore_stockprices)] #各銘柄の株価の前日との変化率
+
+            try:
+                stockprices_raio = [a / b for a, b in zip(self.state[TARGET_IDX:PRICEDIFF_IDX], self.daybefore_stockprices)] #各銘柄の株価の前日との変化率
+            except ZeroDivisionError:
+                stockprices_raio = [1 for _ in range(len(self.state[TARGET_IDX:PRICEDIFF_IDX]))]
             # print("stockprices_raio:", stockprices_raio)
             # normalized_hold = [x / sum(self.state[HOLDING_IDX:EMB_IDX]) for x in self.state[HOLDING_IDX:EMB_IDX]]
             # print("normalized_hold:", normalized_hold)

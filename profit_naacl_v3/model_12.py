@@ -347,8 +347,18 @@ class Actor(nn.Module):
         
 
         # 最終結合層の入力次元を更新
+        # text_out (64), text_out_2 (64), price_out (16) per stock + x_stock (32)
+        # However, looking at the forward pass:
+        # full = torch.cat([x_stock, text_out, text_out_2, price_out], dim=1)
+        # x_stock: (bs, 32)
+        # text_out: (bs, num_stocks * 64) -> because of view(bs, -1)
+        # text_out_2: (bs, num_stocks * 64) -> because of view(bs, -1)
+        # price_out: (bs, num_stocks * 16) -> because of view(bs, -1)
+        
+        linear_c_in_dim = 32 + num_stocks * (64 + 64 + 16)
+        self.linear_c = nn.Linear(linear_c_in_dim, num_stocks)
         # self.linear_c = nn.Linear(d_model * 4, num_stocks)
-        self.linear_c = nn.Linear(2912, num_stocks)
+        # self.linear_c = nn.Linear(2912, num_stocks)
         self.tanh = nn.Tanh()
         self.num_stocks = num_stocks
         self.device = device
@@ -843,7 +853,9 @@ class Critic(nn.Module):
 
         # 結合層の入力次元を更新
         # self.linear_c = nn.Linear(d_model * 4, 32)
-        self.linear_c = nn.Linear(2912, 32)
+        linear_c_in_dim = 32 + num_stocks * (64 + 64 + 16)
+        self.linear_c = nn.Linear(linear_c_in_dim, 32)
+        # self.linear_c = nn.Linear(2912, 32)
 
         # * Critic Layers
         self.linear_critic = nn.Linear(num_stocks, 32)

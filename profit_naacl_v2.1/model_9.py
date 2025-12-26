@@ -88,13 +88,21 @@ class attn(torch.nn.Module):
 
             if lens != None:
                 mask = self.arange[None, :] < lens[:, None]  # B*30
-                # print(score.shape, mask.shape)
-                # print(score)
                 score[~mask] = float("-inf")
+                
+                # Handle cases where lens is 0 (prevent NaN from softmax on all -inf)
+                is_zero_len = (lens == 0)
+                if is_zero_len.any():
+                    score[is_zero_len, 0] = 0.0
 
             attention_weights = F.softmax(score, dim=dim)
             context_vector = attention_weights * full
             context_vector = torch.sum(context_vector, dim=dim)
+            
+            # Zero out context vector for zero-length inputs
+            if lens != None and is_zero_len.any():
+                context_vector[is_zero_len] = 0.0
+            
             return context_vector  # B*in_shape
         else:
             if lens != None:
@@ -397,9 +405,9 @@ class Actor(nn.Module):
             price_history = state[:, PRICE_HISTORY_IDX:].view(
             -1, self.num_stocks, PRICE_HISTORY_DAYS, PRICE_FEATURES
             )
-            print("price_history.shape:", price_history.shape)
+            # print("price_history.shape:", price_history.shape)
         
-        print("shapes:", stock_feats.shape, sentence_feat.shape, len_tweets.shape, time_feats.shape, sec_feats.shape)
+        # print("shapes:", stock_feats.shape, sentence_feat.shape, len_tweets.shape, time_feats.shape, sec_feats.shape)
 
         self.bs = sentence_feat.size(0)
         # print("self.bs:", self.bs)
@@ -409,7 +417,7 @@ class Actor(nn.Module):
         # print("time_feats:", time_feats.shape)
         if INPUT_TEXT=="withSEC" or INPUT_TEXT=="withtimefeatsSEC":
             sec_feats =sec_feats.permute(1, 0, 2, 3) #num_stock, 1, secの数, embeddingsize
-            print("sec_feats.shape: ", sec_feats.shape)
+            # print("sec_feats.shape: ", sec_feats.shape)
         if INPUT_TEXT=="withtimefeatsSEC":
             sec_time_feats = sec_time_feats.permute(1, 2, 0)
             # print("sec_time_feats.shape:", sec_time_feats.shape)
@@ -422,6 +430,7 @@ class Actor(nn.Module):
         price_out = torch.zeros(self.num_stocks, self.bs, 16).to(self.device)
         for i in range(self.num_stocks): #各企業
             h_init, c_init = self.init_hidden()
+            # print("sentence_feat", i, sentence_feat[i, :, :, :, :])
 
             lstm1_out = torch.zeros(num_days, self.bs, self.lstm1_outshape).to(
                 self.device
@@ -483,10 +492,12 @@ class Actor(nn.Module):
             elif INPUT_TEXT=="withtimefeatsSEC":
                 #267-273を模倣　かつtext_out[i]とsecのtextoutにattn
                 temp_sec = sec_feats[i, :, :, :]
-                print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
+                # print("temp_sec.shape: ", temp_sec.shape) #1, secの数, 768
                 
                 temp_sec_time_feats = sec_time_feats[i, :, :]
                 # print(temp_sec_time_feats)
+                # Normalize time features to avoid gradient explosion (values around 100 cause instability in TimeLSTM)
+                temp_sec_time_feats = temp_sec_time_feats / 100.0
                 temp_sec_time_feats = temp_sec_time_feats.view(1, -1)
                 # print(temp_sec_time_feats)
                 
@@ -526,9 +537,11 @@ class Actor(nn.Module):
             price_feature = self.relu(self.price_linears[i](h_n.squeeze(0)))
             price_out[i] = price_feature
             text_out[i] = x1
-            print("x2.shape ", x2.shape)
+            # print("text_out", i, text_out[i])
+            # print("x2.shape ", x2.shape)
             text_out_2[i] = x2
-            
+        
+        # print("text_out0", text_out)
         text_out = text_out.permute(1, 0, 2)
         text_out = text_out.view(self.bs, -1)
         text_out_2 = text_out_2.permute(1, 0, 2)
@@ -539,17 +552,23 @@ class Actor(nn.Module):
 
         # Multi-head Attention
         proj_x_stock = self.proj_stock(x_stock)
+        # print("text_out", text_out)
         proj_text_out = self.proj_text(text_out)
         proj_text_out_2 = self.proj_text2(text_out_2)
         proj_price_out = self.proj_price(price_out_flat)
-        print("proj_x_stock.shape", proj_x_stock.shape) # (bs, d_model)
-        print("proj_text_out.shape", proj_text_out.shape) # (bs, d_model
-        print("proj_text_out_2.shape", proj_text_out_2.shape) # (bs, d_model)
-        print("proj_price_out.shape", proj_price_out.shape)
+        # print("proj_x_stock.shape", proj_x_stock.shape) # (bs, d_model)
+        # print("proj_text_out.shape", proj_text_out.shape) # (bs, d_model
+        # print("proj_text_out_2.shape", proj_text_out_2.shape) # (bs, d_model)
+        # print("proj_price_out.shape", proj_price_out.shape)
+        # print("proj_x_stock", proj_x_stock) # (bs, d_model)
+        # print("proj_text_out", proj_text_out) # (bs, d_model
+        # print("proj_text_out_2", proj_text_out_2) # (bs, d_model)
+        # print("proj_price_out", proj_price_out)
 
         attn_input = torch.cat([proj_x_stock, proj_text_out, proj_text_out_2, proj_price_out], dim=1)
-        print("attn_input.shape", attn_input.shape) # (bs, 4 * d_model)
+        # print("attn_input.shape", attn_input.shape) # (bs, 4 * d_model)
 
+        # print("attn_input", attn_input)
         full = self.tanh(self.linear_c(attn_input))
         return full
 

@@ -10,3 +10,69 @@ Traceback (most recent call last):
   File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v2.1/main.py", line 338, in <module>
     with open(train_pickle, "rb") as f:
 TypeError: expected str, bytes or os.PathLike object, not NoneType
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2026-01-08 13:08:12.064019
+INPUT_TEXT: SMLT-FRS-G
+USING_MODEL: model_12
+output is not made
+train_pickle:  None
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v3/main.py", line 341, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2026-01-08 13:08:14.895330
+INPUT_TEXT: SMLT-FRS-G
+USING_MODEL: model_12
+output is not made
+train_pickle:  None
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v3/main.py", line 341, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2026-01-08 13:08:17.760067
+INPUT_TEXT: SMLT-FRS-G
+USING_MODEL: model_12
+output is not made
+train_pickle:  None
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v3/main.py", line 341, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2026-01-08 13:09:24.744201
+INPUT_TEXT: SMLT-FRS-G
+USING_MODEL: model_12
+output is not made
+train_pickle:  None
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v3/main.py", line 341, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2026-01-08 13:09:27.611904
+INPUT_TEXT: SMLT-FRS-G
+USING_MODEL: model_12
+output is not made
+train_pickle:  None
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v3/main.py", line 341, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType
+/home/fukuda/miniconda3/envs/Profit-naacl/lib/python3.9/site-packages/pyfolio/pos.py:26: UserWarning: Module "zipline.assets" not found; mutltipliers will not be applied to position notionals.
+  warnings.warn(
+start time: 2026-01-08 13:09:30.516332
+INPUT_TEXT: SMLT-FRS-G
+USING_MODEL: model_12
+output is not made
+train_pickle:  None
+Traceback (most recent call last):
+  File "/home/fukuda/M1_reserch/kc_profit_naacl_m1/profit_naacl_v3/main.py", line 341, in <module>
+    with open(train_pickle, "rb") as f:
+TypeError: expected str, bytes or os.PathLike object, not NoneType

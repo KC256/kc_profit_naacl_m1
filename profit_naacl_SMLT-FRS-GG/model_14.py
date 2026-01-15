@@ -351,7 +351,9 @@ class Actor(nn.Module):
 
         # 最終結合層の入力次元を更新
         # self.linear_c = nn.Linear(d_model * 4, num_stocks)
-        self.linear_c = nn.Linear(2912, num_stocks)
+        # self.linear_c = nn.Linear(2912, num_stocks)
+        linear_c_in_dim = 32 + num_stocks * (64 + 64 + 16)
+        self.linear_c = nn.Linear(linear_c_in_dim, num_stocks)
         self.tanh = nn.Tanh()
         self.num_stocks = num_stocks
         self.device = device
@@ -867,7 +869,9 @@ class Critic(nn.Module):
 
         # 結合層の入力次元を更新
         # self.linear_c = nn.Linear(d_model * 4, 32)
-        self.linear_c = nn.Linear(2912, 32)
+        # self.linear_c = nn.Linear(2912, 32)
+        linear_c_in_dim = 32 + num_stocks * (64 + 64 + 16)
+        self.linear_c = nn.Linear(linear_c_in_dim, num_stocks)
 
         # * Critic Layers
         self.linear_critic = nn.Linear(num_stocks, 32)

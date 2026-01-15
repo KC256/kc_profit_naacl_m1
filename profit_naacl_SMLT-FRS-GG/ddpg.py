@@ -63,7 +63,7 @@ class DDPG(object):
             from model_13 import Actor, Critic # この行を追加
             
         elif USING_MODEL=="model_14": # この行を追加
-            from model_13 import Actor, Critic # この行を追加
+            from model_14 import Actor, Critic # この行を追加
             
         self.actor = Actor() #UnboundLocalError: local variable 'Actor' referenced before assignment
         self.actor_target = Actor()

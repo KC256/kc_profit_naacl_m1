@@ -91,6 +91,20 @@ class StockEnvTrade(gym.Env):
         time_feats = self.data["time_features"].view(-1).tolist() 
         
         if INPUT_TEXT=="tweetonly":
+            # self.state = ( #self.stateには元のpickleの各要素（つまりtarget_dayが一日分しか入っていない
+            #     [int(args.initial_account_balance)]  # balance
+            #     + last_price  # stock prices initial
+            #     + [0] * STOCK_DIM  # stocks on hold　ここの調整が必要か
+            #     + emb_data  # tweet features
+            #     + len_data  # tweet len
+            #     + target_price  # target price
+            #     + price_diff
+            #     + vol_diff
+            #     + text_diff
+            #     + price_text_diff
+            #     + all_diff
+            #     + time_feats
+            # )
             self.state = ( #self.stateには元のpickleの各要素（つまりtarget_dayが一日分しか入っていない
                 [int(args.initial_account_balance)]  # balance
                 + last_price  # stock prices initial
@@ -105,6 +119,17 @@ class StockEnvTrade(gym.Env):
                 + all_diff
                 + time_feats
             )
+            print("atweetonly_len(self.state)", len(self.state))
+            print("len(last_price)", len(last_price))
+            print("len(emb_data)", len(emb_data))
+            print("len(len_data)", len(len_data))
+            print("len(target_price)", len(target_price))
+            print("len(price_diff)", len(price_diff))
+            print("len(vol_diff)", len(vol_diff))
+            print("len(text_diff)", len(text_diff))
+            print("len(price_text_diff)", len(price_text_diff))
+            print("len(all_diff)", len(all_diff))
+            print("len(time_feats)", len(time_feats))
             
         elif INPUT_TEXT=="withSEC":
             sec_emb_data = self.data["emb_Discussion_and_Analysis"].view(-1).tolist()

@@ -230,6 +230,7 @@ def make_pickle(date_start, date_end):
         #各企業に対する処理
         for stock_name in stock_names:
             # print(i)
+            print("stock_name", stock_name)
             file_path =os.path.join(folder_path, stock_name, date_target) #01-02
             print(file_path)
             json_length, average_output, time_difference= get_embedding_length_timefeatures(file_path, num_texts_per_day) #これは当日のデータ

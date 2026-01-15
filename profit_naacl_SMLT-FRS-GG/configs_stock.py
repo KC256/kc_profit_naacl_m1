@@ -5,7 +5,7 @@ HMAX_NORMALIZE = 10 #100
 INITIAL_ACCOUNT_BALANCE = 100000 #100000
 # total number of stocks in our portfolio
 # STOCK_DIM = 88
-STOCK_DIM = 20 #修正 87 12
+STOCK_DIM = 22 #修正 87 12
 # N_DAYS = 7
 N_DAYS = 7 #修正
 PRICE_HISTORY_DAYS = 7  # ★★★ 新規追加: 過去7日間のデータを指定 ★★★

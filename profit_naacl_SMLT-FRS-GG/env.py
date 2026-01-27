@@ -539,6 +539,7 @@ class StockEnvTrade(gym.Env):
             self.daybefore_holdstate = self.state[HOLDING_IDX:EMB_IDX]
             self.daybefore_cost = self.cost
             # print("self.reward", self.reward/REWARD_SCALING)
+            print(f"step reward: {self.reward}")
                 
             # print("2sum(end_total_asset):", sum(end_total_asset))
 

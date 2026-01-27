@@ -5,7 +5,7 @@ HMAX_NORMALIZE = 10 #100
 INITIAL_ACCOUNT_BALANCE = 100000 #100000
 # total number of stocks in our portfolio
 # STOCK_DIM = 88
-STOCK_DIM = 22 #修正 87 12
+STOCK_DIM = 22 #20, 22
 # N_DAYS = 7
 N_DAYS = 7 #修正
 PRICE_HISTORY_DAYS = 7  # ★★★ 新規追加: 過去7日間のデータを指定 ★★★
@@ -19,7 +19,7 @@ TIME_FEATS = STOCK_DIM * N_DAYS * MAX_TWEETS #ツイート間の時間差
 SEC_TIME_FEATS = STOCK_DIM * MAX_SECS #SECの決算報告書をtarget_dayの日付差
 
 INPUT_TEXT = "SMLT-FRS-GG" #tweetonly withSEC withtimefeatsSEC SMLT-FRS-G
-USING_MODEL = "model_14" #model_2, model_4, model_3，model_5(SMLT-FRS株価使用)
+USING_MODEL = "model_15" #model_2, model_4, model_3，model_5(SMLT-FRS株価使用)
 TRANSACTION_FEE_PERCENT = 0.000495 #0.000495
 
 SELECT_ACTION ="default" #ddpgのselect_actionにてどのようにactionを出力するか（ランダムアクション部）

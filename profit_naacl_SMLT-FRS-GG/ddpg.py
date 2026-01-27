@@ -64,6 +64,9 @@ class DDPG(object):
             
         elif USING_MODEL=="model_14": # この行を追加
             from model_14 import Actor, Critic # この行を追加
+
+        elif USING_MODEL=="model_15": # この行を追加
+            from model_15_onlystockG import Actor, Critic # この行を追加
             
         self.actor = Actor() #UnboundLocalError: local variable 'Actor' referenced before assignment
         self.actor_target = Actor()
@@ -144,7 +147,7 @@ class DDPG(object):
         print("target_q_batch:",  target_q_batch)
         value_loss = criterion(q_batch, target_q_batch) #0に固定されてる？
         value_loss.backward()
-        print("value_loss:", value_loss)
+        print(f"critic loss: {value_loss.item()}")
         # new_row = pd.DataFrame({'value_loss': [value_loss]})
         # global_df = pd.concat([global_df, new_row], axis=0, ignore_index=True)
         # torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1.0) #0214
@@ -158,10 +161,9 @@ class DDPG(object):
             to_tensor(state_batch), self.actor(to_tensor(state_batch))
         )
 
-        print("policy_loss:", policy_loss)
         policy_loss = policy_loss.mean()
         policy_loss.backward()
-        print("policy_loss_mean:", policy_loss)
+        print(f"actor loss: {policy_loss.item()}")
         # torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0) #0214
         self.actor_optim.step()
 
